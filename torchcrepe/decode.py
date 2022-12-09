@@ -1,8 +1,8 @@
 import librosa
 import numpy as np
-import torch
+import paddle
 
-import torchcrepe
+import paddlecrepe
 
 
 ###############################################################################
@@ -15,7 +15,7 @@ def argmax(logits):
     bins = logits.argmax(dim=1)
 
     # Convert to frequency in Hz
-    return bins, torchcrepe.convert.bins_to_frequency(bins)
+    return bins, paddlecrepe.convert.bins_to_frequency(bins)
 
 
 def weighted_argmax(logits):
@@ -24,8 +24,8 @@ def weighted_argmax(logits):
     bins = logits.argmax(dim=1)
 
     # Find bounds of analysis window
-    start = torch.max(torch.tensor(0, device=logits.device), bins - 4)
-    end = torch.min(torch.tensor(logits.size(1), device=logits.device), bins + 5)
+    start = paddle.max(paddle.tensor(0, device=logits.device), bins - 4)
+    end = paddle.min(paddle.tensor(logits.size(1), device=logits.device), bins + 5)
 
     # Mask out everything outside of window
     for batch in range(logits.size(0)):
@@ -35,21 +35,21 @@ def weighted_argmax(logits):
 
     # Construct weights
     if not hasattr(weighted_argmax, 'weights'):
-        weights = torchcrepe.convert.bins_to_cents(torch.arange(360))
+        weights = paddlecrepe.convert.bins_to_cents(paddle.arange(360))
         weighted_argmax.weights = weights[None, :, None]
 
     # Ensure devices are the same (no-op if they are)
     weighted_argmax.weights = weighted_argmax.weights.to(logits.device)
 
     # Convert to probabilities
-    with torch.no_grad():
-        probs = torch.sigmoid(logits)
+    with paddle.no_grad():
+        probs = paddle.sigmoid(logits)
 
     # Apply weights
     cents = (weighted_argmax.weights * probs).sum(dim=1) / probs.sum(dim=1)
 
     # Convert to frequency in Hz
-    return bins, torchcrepe.convert.cents_to_frequency(cents)
+    return bins, paddlecrepe.convert.cents_to_frequency(cents)
 
 
 def viterbi(logits):
@@ -62,8 +62,8 @@ def viterbi(logits):
         viterbi.transition = transition
 
     # Normalize logits
-    with torch.no_grad():
-        probs = torch.nn.functional.softmax(logits, dim=1)
+    with paddle.no_grad():
+        probs = paddle.nn.functional.softmax(logits, dim=1)
 
     # Convert to numpy
     sequences = probs.cpu().numpy()
@@ -73,8 +73,8 @@ def viterbi(logits):
         librosa.sequence.viterbi(sequence, viterbi.transition).astype(np.int64)
         for sequence in sequences])
 
-    # Convert to pytorch
-    bins = torch.tensor(bins, device=probs.device)
+    # Convert to pypaddle
+    bins = paddle.tensor(bins, device=probs.device)
 
     # Convert to frequency in Hz
-    return bins, torchcrepe.convert.bins_to_frequency(bins)
+    return bins, paddlecrepe.convert.bins_to_frequency(bins)

@@ -1,7 +1,7 @@
 import numpy as np
-import torch
+import paddle
 
-import torchcrepe
+import paddlecrepe
 
 
 ###############################################################################
@@ -17,10 +17,10 @@ class At:
 
     def __call__(self, pitch, periodicity):
         # Make a copy to prevent in-place modification
-        pitch = torch.clone(pitch)
+        pitch = paddle.clone(pitch)
 
         # Threshold
-        pitch[periodicity < self.value] = torchcrepe.UNVOICED
+        pitch[periodicity < self.value] = paddlecrepe.UNVOICED
         return pitch
 
 
@@ -44,13 +44,13 @@ class Hysteresis:
         device = pitch.device
 
         # Perform hysteresis in log-2 space
-        pitch = torch.log2(pitch).detach().flatten().cpu().numpy()
+        pitch = paddle.log2(pitch).detach().flatten().cpu().numpy()
 
         # Flatten periodicity
         periodicity = periodicity.flatten().cpu().numpy()
 
         # Ignore confidently unvoiced pitch
-        pitch[periodicity < self.lower_bound] = torchcrepe.UNVOICED
+        pitch[periodicity < self.lower_bound] = paddlecrepe.UNVOICED
 
         # Whiten pitch
         mean, std = np.nanmean(pitch), np.nanstd(pitch)
@@ -89,17 +89,17 @@ class Hysteresis:
                 i += 1
 
         # Remove pitch with low periodicity
-        pitch[periodicity < threshold] = torchcrepe.UNVOICED
+        pitch[periodicity < threshold] = paddlecrepe.UNVOICED
 
         # Unwhiten
         pitch = pitch * std + mean
 
         # Convert to Hz
-        pitch = torch.tensor(2 ** pitch, device=device)[None, :]
+        pitch = paddle.tensor(2 ** pitch, device=device)[None, :]
 
         # Optionally return threshold
         if self.return_threshold:
-            return pitch, torch.tensor(threshold, device=device)
+            return pitch, paddle.tensor(threshold, device=device)
 
         return pitch
 
@@ -118,14 +118,14 @@ class Silence:
     def __call__(self,
                  periodicity,
                  audio,
-                 sample_rate=torchcrepe.SAMPLE_RATE,
+                 sample_rate=paddlecrepe.SAMPLE_RATE,
                  hop_length=None,
                  pad=True):
         # Don't modify in-place
-        periodicity = torch.clone(periodicity)
+        periodicity = paddle.clone(periodicity)
 
         # Compute loudness
-        loudness = torchcrepe.loudness.a_weighted(
+        loudness = paddlecrepe.loudness.a_weighted(
             audio, sample_rate, hop_length, pad)
 
         # Threshold silence

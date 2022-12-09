@@ -2,10 +2,10 @@ import warnings
 
 import numpy as np
 import resampy
-import torch
+import paddle
 import tqdm
 
-import torchcrepe
+import paddlecrepe
 
 
 __all__ = ['CENTS_PER_BIN',
@@ -52,7 +52,7 @@ def predict(audio,
             fmin=50.,
             fmax=MAX_FMAX,
             model='full',
-            decoder=torchcrepe.decode.viterbi,
+            decoder=paddlecrepe.decode.viterbi,
             return_harmonicity=False,
             return_periodicity=False,
             batch_size=None,
@@ -61,7 +61,7 @@ def predict(audio,
     """Performs pitch estimation
 
     Arguments
-        audio (torch.tensor [shape=(1, time)])
+        audio (paddle.tensor [shape=(1, time)])
             The audio signal
         sample_rate (int)
             The sampling rate in Hz
@@ -87,14 +87,14 @@ def predict(audio,
             Whether to zero-pad the audio
 
     Returns
-        pitch (torch.tensor [shape=(1, 1 + int(time // hop_length))])
-        (Optional) periodicity (torch.tensor
+        pitch (paddle.tensor [shape=(1, 1 + int(time // hop_length))])
+        (Optional) periodicity (paddle.tensor
                                 [shape=(1, 1 + int(time // hop_length))])
     """
     # Deprecate return_harmonicity
     if return_harmonicity:
         message = (
-            'The torchcrepe return_harmonicity argument is deprecated and '
+            'The paddlecrepe return_harmonicity argument is deprecated and '
             'will be removed in a future release. Please use '
             'return_periodicity. Rationale: if network confidence measured '
             'harmonics, the value would be low for non-harmonic, periodic '
@@ -105,7 +105,7 @@ def predict(audio,
     results = []
 
     # Postprocessing breaks gradients, so just don't compute them
-    with torch.no_grad():
+    with paddle.no_grad():
 
         # Preprocess audio
         generator = preprocess(audio,
@@ -142,10 +142,10 @@ def predict(audio,
     # Split pitch and periodicity
     if return_periodicity:
         pitch, periodicity = zip(*results)
-        return torch.cat(pitch, 1), torch.cat(periodicity, 1)
+        return paddle.concat(pitch, 1), paddle.concat(periodicity, 1)
 
     # Concatenate
-    return torch.cat(results, 1)
+    return paddle.concat(results, 1)
 
 
 def predict_from_file(audio_file,
@@ -153,7 +153,7 @@ def predict_from_file(audio_file,
                       fmin=50.,
                       fmax=MAX_FMAX,
                       model='full',
-                      decoder=torchcrepe.decode.viterbi,
+                      decoder=paddlecrepe.decode.viterbi,
                       return_harmonicity=False,
                       return_periodicity=False,
                       batch_size=None,
@@ -186,12 +186,12 @@ def predict_from_file(audio_file,
             Whether to zero-pad the audio
 
     Returns
-        pitch (torch.tensor [shape=(1, 1 + int(time // hop_length))])
-        (Optional) periodicity (torch.tensor
+        pitch (paddle.tensor [shape=(1, 1 + int(time // hop_length))])
+        (Optional) periodicity (paddle.tensor
                                 [shape=(1, 1 + int(time // hop_length))])
     """
     # Load audio
-    audio, sample_rate = torchcrepe.load.audio(audio_file)
+    audio, sample_rate = paddlecrepe.load.audio(audio_file)
 
     # Predict
     return predict(audio,
@@ -216,7 +216,7 @@ def predict_from_file_to_file(audio_file,
                               fmin=50.,
                               fmax=MAX_FMAX,
                               model='full',
-                              decoder=torchcrepe.decode.viterbi,
+                              decoder=paddlecrepe.decode.viterbi,
                               batch_size=None,
                               device='cpu',
                               pad=True):
@@ -251,7 +251,7 @@ def predict_from_file_to_file(audio_file,
     # Deprecate output_harmonicity_file
     if output_harmonicity_file is not None:
         message = (
-            'The torchcrepe output_harmonicity_file argument is deprecated and '
+            'The paddlecrepe output_harmonicity_file argument is deprecated and '
             'will be removed in a future release. Please use '
             'output_periodicity_file. Rationale: if network confidence measured '
             'harmonic content, the value would be low for non-harmonic, periodic '
@@ -274,10 +274,10 @@ def predict_from_file_to_file(audio_file,
 
     # Save to disk
     if output_periodicity_file is not None:
-        torch.save(prediction[0].detach(), output_pitch_file)
-        torch.save(prediction[1].detach(), output_periodicity_file)
+        paddle.save(prediction[0].detach(), output_pitch_file)
+        paddle.save(prediction[1].detach(), output_periodicity_file)
     else:
-        torch.save(prediction.detach(), output_pitch_file)
+        paddle.save(prediction.detach(), output_pitch_file)
 
 
 def predict_from_files_to_files(audio_files,
@@ -288,7 +288,7 @@ def predict_from_files_to_files(audio_files,
                                 fmin=50.,
                                 fmax=MAX_FMAX,
                                 model='full',
-                                decoder=torchcrepe.decode.viterbi,
+                                decoder=paddlecrepe.decode.viterbi,
                                 batch_size=None,
                                 device='cpu',
                                 pad=True):
@@ -323,7 +323,7 @@ def predict_from_files_to_files(audio_files,
     # Deprecate output_harmonicity_files
     if output_harmonicity_files is not None:
         message = (
-            'The torchcrepe output_harmonicity_files argument is deprecated and '
+            'The paddlecrepe output_harmonicity_files argument is deprecated and '
             'will be removed in a future release. Please use '
             'output_periodicity_files. Rationale: if network confidence measured '
             'harmonic content, the value would be low for non-harmonic, periodic '
@@ -336,7 +336,7 @@ def predict_from_files_to_files(audio_files,
 
     # Setup iterator
     iterator = zip(audio_files, output_pitch_files, output_periodicity_files)
-    iterator = tqdm.tqdm(iterator, desc='torchcrepe', dynamic_ncols=True)
+    iterator = tqdm.tqdm(iterator, desc='paddlecrepe', dynamic_ncols=True)
     for audio_file, output_pitch_file, output_periodicity_file in iterator:
 
         # Predict a file
@@ -368,7 +368,7 @@ def embed(audio,
     """Embeds audio to the output of CREPE's fifth maxpool layer
 
     Arguments
-        audio (torch.tensor [shape=(1, time)])
+        audio (paddle.tensor [shape=(1, time)])
             The audio signals
         sample_rate (int)
             The sampling rate in Hz
@@ -384,7 +384,7 @@ def embed(audio,
             Whether to zero-pad the audio
 
     Returns
-        embedding (torch.tensor [shape=(1,
+        embedding (paddle.tensor [shape=(1,
                                         1 + int(time // hop_length), 32, -1)])
     """
     results = []
@@ -408,7 +408,7 @@ def embed(audio,
         results.append(result.to(audio.device))
 
     # Concatenate
-    return torch.cat(results, 1)
+    return paddle.concat(results, 1)
 
 
 def embed_from_file(audio_file,
@@ -434,11 +434,11 @@ def embed_from_file(audio_file,
             Whether to zero-pad the audio
 
     Returns
-        embedding (torch.tensor [shape=(1,
+        embedding (paddle.tensor [shape=(1,
                                         1 + int(time // hop_length), 32, -1)])
     """
     # Load audio
-    audio, sample_rate = torchcrepe.load.audio(audio_file)
+    audio, sample_rate = paddlecrepe.load.audio(audio_file)
 
     # Embed
     return embed(audio,
@@ -476,7 +476,7 @@ def embed_from_file_to_file(audio_file,
             Whether to zero-pad the audio
     """
     # No use computing gradients if we're just saving to file
-    with torch.no_grad():
+    with paddle.no_grad():
 
         # Embed
         embedding = embed_from_file(audio_file,
@@ -487,7 +487,7 @@ def embed_from_file_to_file(audio_file,
                                     pad)
 
         # Save to disk
-        torch.save(embedding.detach(), output_file)
+        paddle.save(embedding.detach(), output_file)
 
 
 def embed_from_files_to_files(audio_files,
@@ -517,7 +517,7 @@ def embed_from_files_to_files(audio_files,
     """
     # Setup iterator
     iterator = zip(audio_files, output_files)
-    iterator = tqdm.tqdm(iterator, desc='torchcrepe', dynamic_ncols=True)
+    iterator = tqdm.tqdm(iterator, desc='paddlecrepe', dynamic_ncols=True)
     for audio_file, output_file in iterator:
 
         # Embed a file
@@ -539,7 +539,7 @@ def infer(frames, model='full', embed=False):
     """Forward pass through the model
 
     Arguments
-        frames (torch.tensor [shape=(time / hop_length, 1024)])
+        frames (paddle.tensor [shape=(time / hop_length, 1024)])
             The network input
         model (string)
             The model capacity. One of 'full' or 'tiny'.
@@ -547,14 +547,14 @@ def infer(frames, model='full', embed=False):
             Whether to stop inference at the intermediate embedding layer
 
     Returns
-        logits (torch.tensor [shape=(1 + int(time // hop_length), 360)]) OR
-        embedding (torch.tensor [shape=(1 + int(time // hop_length),
+        logits (paddle.tensor [shape=(1 + int(time // hop_length), 360)]) OR
+        embedding (paddle.tensor [shape=(1 + int(time // hop_length),
                                        embedding_size)])
     """
     # Load the model if necessary
     if not hasattr(infer, 'model') or not hasattr(infer, 'capacity') or \
        (hasattr(infer, 'capacity') and infer.capacity != model):
-        torchcrepe.load.model(frames.device, model)
+        paddlecrepe.load.model(frames.device, model)
 
     # Move model to correct device (no-op if devices are the same)
     infer.model = infer.model.to(frames.device)
@@ -566,13 +566,13 @@ def infer(frames, model='full', embed=False):
 def postprocess(probabilities,
                 fmin=0.,
                 fmax=MAX_FMAX,
-                decoder=torchcrepe.decode.viterbi,
+                decoder=paddlecrepe.decode.viterbi,
                 return_harmonicity=False,
                 return_periodicity=False):
     """Convert model output to F0 and periodicity
 
     Arguments
-        probabilities (torch.tensor [shape=(1, 360, time / hop_length)])
+        probabilities (paddle.tensor [shape=(1, 360, time / hop_length)])
             The probabilities for each pitch bin inferred by the network
         fmin (float)
             The minimum allowable frequency in Hz
@@ -586,16 +586,16 @@ def postprocess(probabilities,
             Whether to also return the network confidence
 
     Returns
-        pitch (torch.tensor [shape=(1, 1 + int(time // hop_length))])
-        periodicity (torch.tensor [shape=(1, 1 + int(time // hop_length))])
+        pitch (paddle.tensor [shape=(1, 1 + int(time // hop_length))])
+        periodicity (paddle.tensor [shape=(1, 1 + int(time // hop_length))])
     """
     # Sampling is non-differentiable, so remove from graph
     probabilities = probabilities.detach()
 
     # Convert frequency range to pitch bin range
-    minidx = torchcrepe.convert.frequency_to_bins(torch.tensor(fmin))
-    maxidx = torchcrepe.convert.frequency_to_bins(torch.tensor(fmax),
-                                                  torch.ceil)
+    minidx = paddlecrepe.convert.frequency_to_bins(paddle.to_tensor(fmin))
+    maxidx = paddlecrepe.convert.frequency_to_bins(paddle.to_tensor(fmax),
+                                                  paddle.ceil)
 
     # Remove frequencies outside of allowable range
     probabilities[:, :minidx] = -float('inf')
@@ -607,7 +607,7 @@ def postprocess(probabilities,
     # Deprecate return_harmonicity
     if return_harmonicity:
         message = (
-            'The torchcrepe return_harmonicity argument is deprecated and '
+            'The paddlecrepe return_harmonicity argument is deprecated and '
             'will be removed in a future release. Please use '
             'return_periodicity. Rationale: if network confidence measured '
             'harmonics, the value would be low for non-harmonic, periodic '
@@ -631,7 +631,7 @@ def preprocess(audio,
     """Convert audio to model input
 
     Arguments
-        audio (torch.tensor [shape=(1, time)])
+        audio (paddle.tensor [shape=(1, time)])
             The audio signals
         sample_rate (int)
             The sampling rate in Hz
@@ -645,7 +645,7 @@ def preprocess(audio,
             Whether to zero-pad the audio
 
     Returns
-        frames (torch.tensor [shape=(1 + int(time // hop_length), 1024)])
+        frames (paddle.tensor [shape=(1 + int(time // hop_length), 1024)])
     """
     # Default hop length of 10 ms
     hop_length = sample_rate // 100 if hop_length is None else hop_length
@@ -660,7 +660,7 @@ def preprocess(audio,
     # Maybe pad
     if pad:
         total_frames = 1 + int(audio.size(1) // hop_length)
-        audio = torch.nn.functional.pad(
+        audio = paddle.nn.functional.pad(
             audio,
             (WINDOW_SIZE // 2, WINDOW_SIZE // 2))
     else:
@@ -678,7 +678,7 @@ def preprocess(audio,
                   (i + batch_size - 1) * hop_length + WINDOW_SIZE)
 
         # Chunk
-        frames = torch.nn.functional.unfold(
+        frames = paddle.nn.functional.unfold(
             audio[:, None, None, start:end],
             kernel_size=(1, WINDOW_SIZE),
             stride=(1, hop_length))
@@ -695,7 +695,7 @@ def preprocess(audio,
         # Scale
         # Note: during silent frames, this produces very large values. But
         # this seems to be what the network expects.
-        frames /= torch.max(torch.tensor(1e-10, device=frames.device),
+        frames /= paddle.max(paddle.tensor(1e-10, device=frames.device),
                             frames.std(dim=1, keepdim=True))
 
         yield frames
@@ -712,7 +712,7 @@ def periodicity(probabilities, bins):
     probs_stacked = probabilities.transpose(1, 2).reshape(-1, PITCH_BINS)
 
     # shape=(batch * time / hop_length, 1)
-    bins_stacked = bins.reshape(-1, 1).to(torch.int64)
+    bins_stacked = bins.reshape(-1, 1).to(paddle.int64)
 
     # Use maximum logit over pitch bins as periodicity
     periodicity = probs_stacked.gather(1, bins_stacked)
@@ -733,5 +733,5 @@ def resample(audio, sample_rate):
     # We have to use resampy if we want numbers to match Crepe
     audio = resampy.resample(audio, sample_rate, SAMPLE_RATE)
 
-    # Convert to pytorch
-    return torch.tensor(audio, device=device).unsqueeze(0)
+    # Convert to pypaddle
+    return paddle.tensor(audio, device=device).unsqueeze(0)

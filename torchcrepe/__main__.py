@@ -2,7 +2,7 @@ import argparse
 import os
 import warnings
 
-import torchcrepe
+import paddlecrepe
 
 
 ###############################################################################
@@ -114,15 +114,15 @@ def main():
 
     # Get decoder
     if args.decoder == 'argmax':
-        decoder = torchcrepe.decode.argmax
+        decoder = paddlecrepe.decode.argmax
     elif args.decoder == 'weighted_argmax':
-        decoder = torchcrepe.decode.weighted_argmax
+        decoder = paddlecrepe.decode.weighted_argmax
     elif args.decoder == 'viterbi':
-        decoder = torchcrepe.decode.viterbi
+        decoder = paddlecrepe.decode.viterbi
 
     # Infer pitch or embedding and save to disk
     if args.embed:
-        torchcrepe.embed_from_files_to_files(args.audio_files,
+        paddlecrepe.embed_from_files_to_files(args.audio_files,
                                              args.output_files,
                                              args.hop_length,
                                              args.model,
@@ -130,7 +130,7 @@ def main():
                                              device,
                                              not args.no_pad)
     else:
-        torchcrepe.predict_from_files_to_files(args.audio_files,
+        paddlecrepe.predict_from_files_to_files(args.audio_files,
                                                args.output_files,
                                                None,
                                                args.output_periodicity_files,
