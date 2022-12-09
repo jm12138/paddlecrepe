@@ -55,7 +55,7 @@ def parse_args():
         help='The minimum frequency allowed')
     parser.add_argument(
         '--fmax',
-        default=torchcrepe.MAX_FMAX,
+        default=paddlecrepe.MAX_FMAX,
         type=float,
         help='The maximum frequency allowed')
     parser.add_argument(
@@ -96,7 +96,7 @@ def main():
     # Deprecate output_harmonicity_files
     if args.output_harmonicity_files is not None:
         message = (
-            'The torchcrepe output_harmonicity_files argument is deprecated and '
+            'The paddlecrepe output_harmonicity_files argument is deprecated and '
             'will be removed in a future release. Please use '
             'output_periodicity_files. Rationale: if network confidence measured '
             'harmonic content, the value would be low for non-harmonic, periodic '

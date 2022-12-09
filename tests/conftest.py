@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 import pytest
-import torch
+import paddle
 
-import torchcrepe
+import paddlecrepe
 
 
 ###############################################################################
@@ -27,9 +27,9 @@ def activation_tiny():
 @pytest.fixture(scope='session')
 def audio():
     """Retrieve the test audio"""
-    audio, sample_rate = torchcrepe.load.audio(path('test.wav'))
-    if sample_rate != torchcrepe.SAMPLE_RATE:
-        audio = torchcrepe.resample(audio, sample_rate)
+    audio, sample_rate = paddlecrepe.load.audio(path('test.wav'))
+    if sample_rate != paddlecrepe.SAMPLE_RATE:
+        audio = paddlecrepe.resample(audio, sample_rate)
     return audio
 
 
@@ -43,7 +43,7 @@ def frames():
     passed through crepe to retrieve the activations--thus bypassing the
     preprocessing step.
     """
-    return torch.tensor(np.load(path('frames-crepe.npy')))
+    return paddle.to_tensor(np.load(path('frames-crepe.npy')))
 
 
 ###############################################################################

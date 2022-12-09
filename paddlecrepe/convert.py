@@ -40,7 +40,7 @@ def frequency_to_bins(frequency, quantize_fn=paddle.floor):
 
 def frequency_to_cents(frequency):
     """Convert frequency in Hz to cents"""
-    return 1200 * torch.log2(frequency / 10.)
+    return 1200 * paddle.log2(frequency / 10.)
 
 
 ###############################################################################
