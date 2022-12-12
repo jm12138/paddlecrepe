@@ -109,9 +109,6 @@ def main():
     if args.output_periodicity_files is not None:
         [make_parent_directory(file) for file in args.output_periodicity_files]
 
-    # Get inference device
-    device = 'cpu' if args.gpu is None else f'cuda:{args.gpu}'
-
     # Get decoder
     if args.decoder == 'argmax':
         decoder = paddlecrepe.decode.argmax
@@ -127,7 +124,6 @@ def main():
                                              args.hop_length,
                                              args.model,
                                              args.batch_size,
-                                             device,
                                              not args.no_pad)
     else:
         paddlecrepe.predict_from_files_to_files(args.audio_files,
@@ -140,7 +136,6 @@ def main():
                                                args.model,
                                                decoder,
                                                args.batch_size,
-                                               device,
                                                not args.no_pad)
 
 

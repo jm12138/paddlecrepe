@@ -56,7 +56,6 @@ def predict(audio,
             return_harmonicity=False,
             return_periodicity=False,
             batch_size=None,
-            device='cpu',
             pad=True):
     """Performs pitch estimation
 
@@ -81,8 +80,6 @@ def predict(audio,
             Whether to also return the network confidence
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device used to run inference
         pad (bool)
             Whether to zero-pad the audio
 
@@ -112,7 +109,6 @@ def predict(audio,
                                sample_rate,
                                hop_length,
                                batch_size,
-                               device,
                                pad)
         for frames in generator:
 
@@ -121,7 +117,7 @@ def predict(audio,
 
             # shape=(batch, 360, time / hop_length)
             probabilities = probabilities.reshape(
-                audio.size(0), -1, PITCH_BINS).transpose(1, 2)
+                audio.shape[0], -1, PITCH_BINS).transpose(1, 2)
 
             # Convert probabilities to F0 and periodicity
             result = postprocess(probabilities,
@@ -130,12 +126,11 @@ def predict(audio,
                                  decoder,
                                  return_periodicity)
 
-            # Place on same device as audio to allow very long inputs
             if isinstance(result, tuple):
-                result = (result[0].to(audio.device),
-                          result[1].to(audio.device))
+                result = (result[0],
+                          result[1])
             else:
-                 result = result.to(audio.device)
+                 result = result
 
             results.append(result)
 
@@ -157,7 +152,6 @@ def predict_from_file(audio_file,
                       return_harmonicity=False,
                       return_periodicity=False,
                       batch_size=None,
-                      device='cpu',
                       pad=True):
     """Performs pitch estimation from file on disk
 
@@ -180,8 +174,6 @@ def predict_from_file(audio_file,
             Whether to also return the network confidence
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device used to run inference
         pad (bool)
             Whether to zero-pad the audio
 
@@ -204,7 +196,6 @@ def predict_from_file(audio_file,
                    return_harmonicity,
                    return_periodicity,
                    batch_size,
-                   device,
                    pad)
 
 
@@ -218,7 +209,6 @@ def predict_from_file_to_file(audio_file,
                               model='full',
                               decoder=paddlecrepe.decode.viterbi,
                               batch_size=None,
-                              device='cpu',
                               pad=True):
     """Performs pitch estimation from file on disk
 
@@ -243,8 +233,6 @@ def predict_from_file_to_file(audio_file,
             The decoder to use. See decode.py for decoders.
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device used to run inference
         pad (bool)
             Whether to zero-pad the audio
     """
@@ -269,7 +257,6 @@ def predict_from_file_to_file(audio_file,
                                    False,
                                    output_periodicity_file is not None,
                                    batch_size,
-                                   device,
                                    pad)
 
     # Save to disk
@@ -290,7 +277,6 @@ def predict_from_files_to_files(audio_files,
                                 model='full',
                                 decoder=paddlecrepe.decode.viterbi,
                                 batch_size=None,
-                                device='cpu',
                                 pad=True):
     """Performs pitch estimation from files on disk without reloading model
 
@@ -315,8 +301,6 @@ def predict_from_files_to_files(audio_files,
             The decoder to use. See decode.py for decoders.
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device used to run inference
         pad (bool)
             Whether to zero-pad the audio
     """
@@ -350,7 +334,6 @@ def predict_from_files_to_files(audio_files,
                                   model,
                                   decoder,
                                   batch_size,
-                                  device,
                                   pad)
 
 ###############################################################################
@@ -363,7 +346,6 @@ def embed(audio,
           hop_length=None,
           model='full',
           batch_size=None,
-          device='cpu',
           pad=True):
     """Embeds audio to the output of CREPE's fifth maxpool layer
 
@@ -378,8 +360,6 @@ def embed(audio,
             The model capacity. One of 'full' or 'tiny'.
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device to run inference on
         pad (bool)
             Whether to zero-pad the audio
 
@@ -394,7 +374,6 @@ def embed(audio,
                            sample_rate,
                            hop_length,
                            batch_size,
-                           device,
                            pad)
     for frames in generator:
 
@@ -402,10 +381,9 @@ def embed(audio,
         embedding = infer(frames, model, embed=True)
 
         # shape=(batch, time / hop_length, 32, embedding_size)
-        result = embedding.reshape(audio.size(0), frames.size(0), 32, -1)
+        result = embedding.reshape((audio.shape[0], frames.shape[0], 32, -1))
 
-        # Place on same device as audio. This allows for large inputs.
-        results.append(result.to(audio.device))
+        results.append(result)
 
     # Concatenate
     return paddle.concat(results, 1)
@@ -415,7 +393,6 @@ def embed_from_file(audio_file,
                     hop_length=None,
                     model='full',
                     batch_size=None,
-                    device='cpu',
                     pad=True):
     """Embeds audio from disk to the output of CREPE's fifth maxpool layer
 
@@ -428,8 +405,6 @@ def embed_from_file(audio_file,
             The model capacity. One of 'full' or 'tiny'.
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device to run inference on
         pad (bool)
             Whether to zero-pad the audio
 
@@ -446,7 +421,6 @@ def embed_from_file(audio_file,
                  hop_length,
                  model,
                  batch_size,
-                 device,
                  pad)
 
 
@@ -455,7 +429,6 @@ def embed_from_file_to_file(audio_file,
                             hop_length=None,
                             model='full',
                             batch_size=None,
-                            device='cpu',
                             pad=True):
     """Embeds audio from disk and saves to disk
 
@@ -470,8 +443,6 @@ def embed_from_file_to_file(audio_file,
             The model capacity. One of 'full' or 'tiny'.
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device to run inference on
         pad (bool)
             Whether to zero-pad the audio
     """
@@ -483,7 +454,6 @@ def embed_from_file_to_file(audio_file,
                                     hop_length,
                                     model,
                                     batch_size,
-                                    device,
                                     pad)
 
         # Save to disk
@@ -495,7 +465,6 @@ def embed_from_files_to_files(audio_files,
                               hop_length=None,
                               model='full',
                               batch_size=None,
-                              device='cpu',
                               pad=True):
     """Embeds audio from disk and saves to disk without reloading model
 
@@ -510,8 +479,6 @@ def embed_from_files_to_files(audio_files,
             The model capacity. One of 'full' or 'tiny'.
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device to run inference on
         pad (bool)
             Whether to zero-pad the audio
     """
@@ -526,7 +493,6 @@ def embed_from_files_to_files(audio_files,
                                 hop_length,
                                 model,
                                 batch_size,
-                                device,
                                 pad)
 
 
@@ -554,10 +520,9 @@ def infer(frames, model='full', embed=False):
     # Load the model if necessary
     if not hasattr(infer, 'model') or not hasattr(infer, 'capacity') or \
        (hasattr(infer, 'capacity') and infer.capacity != model):
-        paddlecrepe.load.model(frames.device, model)
+        paddlecrepe.load.model(model)
 
-    # Move model to correct device (no-op if devices are the same)
-    infer.model = infer.model.to(frames.device)
+    infer.model = infer.model
 
     # Apply model
     return infer.model(frames, embed=embed)
@@ -626,7 +591,6 @@ def preprocess(audio,
                sample_rate,
                hop_length=None,
                batch_size=None,
-               device='cpu',
                pad=True):
     """Convert audio to model input
 
@@ -639,8 +603,6 @@ def preprocess(audio,
             The hop_length in samples
         batch_size (int)
             The number of frames per batch
-        device (string)
-            The device to run inference on
         pad (bool)
             Whether to zero-pad the audio
 
@@ -659,12 +621,13 @@ def preprocess(audio,
 
     # Maybe pad
     if pad:
-        total_frames = 1 + int(audio.size(1) // hop_length)
+        total_frames = 1 + int(audio.shape[1] // hop_length)
         audio = paddle.nn.functional.pad(
-            audio,
-            (WINDOW_SIZE // 2, WINDOW_SIZE // 2))
+            paddle.unsqueeze(audio, 0),
+            (WINDOW_SIZE // 2, WINDOW_SIZE // 2), data_format='NCL')
+        paddle.squeeze(audio, 0)
     else:
-        total_frames = 1 + int((audio.size(1) - WINDOW_SIZE) // hop_length)
+        total_frames = 1 + int((audio.shape[1] - WINDOW_SIZE) // hop_length)
 
     # Default to running all frames in a single batch
     batch_size = total_frames if batch_size is None else batch_size
@@ -674,29 +637,26 @@ def preprocess(audio,
 
         # Batch indices
         start = max(0, i * hop_length)
-        end = min(audio.size(1),
+        end = min(audio.shape[1],
                   (i + batch_size - 1) * hop_length + WINDOW_SIZE)
 
         # Chunk
         frames = paddle.nn.functional.unfold(
-            audio[:, None, None, start:end],
-            kernel_size=(1, WINDOW_SIZE),
-            stride=(1, hop_length))
+            audio[:, None, start:end],
+            kernel_sizes=[1, WINDOW_SIZE],
+            strides=[1, hop_length])
 
         # shape=(1 + int(time / hop_length, 1024)
-        frames = frames.transpose(1, 2).reshape(-1, WINDOW_SIZE)
-
-        # Place on device
-        frames = frames.to(device)
+        frames = frames.transpose((0, 2, 1)).reshape((-1, WINDOW_SIZE))
 
         # Mean-center
-        frames -= frames.mean(dim=1, keepdim=True)
+        frames -= frames.mean(axis=1, keepdim=True)
 
         # Scale
         # Note: during silent frames, this produces very large values. But
         # this seems to be what the network expects.
-        frames /= paddle.max(paddle.tensor(1e-10, device=frames.device),
-                            frames.std(dim=1, keepdim=True))
+        frames /= paddle.maximum(paddle.to_tensor(1e-10, dtype=paddle.float32),
+                            frames.std(axis=1, keepdim=True))
 
         yield frames
 
@@ -709,22 +669,20 @@ def preprocess(audio,
 def periodicity(probabilities, bins):
     """Computes the periodicity from the network output and pitch bins"""
     # shape=(batch * time / hop_length, 360)
-    probs_stacked = probabilities.transpose(1, 2).reshape(-1, PITCH_BINS)
+    probs_stacked = probabilities.transpose((0, 2, 1)).reshape((-1, PITCH_BINS))
 
     # shape=(batch * time / hop_length, 1)
-    bins_stacked = bins.reshape(-1, 1).to(paddle.int64)
+    bins_stacked = bins.reshape((-1, 1)).cast(paddle.int64)
 
     # Use maximum logit over pitch bins as periodicity
-    periodicity = probs_stacked.gather(1, bins_stacked)
+    periodicity = probs_stacked.gather(bins_stacked, 1)
 
     # shape=(batch, time / hop_length)
-    return periodicity.reshape(probabilities.size(0), probabilities.size(2))
+    return periodicity.reshape((probabilities.shape[0], probabilities.shape[2]))
 
 
 def resample(audio, sample_rate):
     """Resample audio"""
-    # Store device for later placement
-    device = audio.device
 
     # Convert to numpy
     audio = audio.detach().cpu().numpy().squeeze(0)
@@ -734,4 +692,4 @@ def resample(audio, sample_rate):
     audio = resampy.resample(audio, sample_rate, SAMPLE_RATE)
 
     # Convert to pypaddle
-    return paddle.tensor(audio, device=device).unsqueeze(0)
+    return paddle.to_tensor(audio).unsqueeze(0)

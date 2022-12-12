@@ -27,8 +27,6 @@ REF_DB = 20.
 
 def a_weighted(audio, sample_rate, hop_length=None, pad=True):
     """Retrieve the per-frame loudness"""
-    # Save device
-    device = audio.device
 
     # Default hop length of 10 ms
     hop_length = sample_rate // 100 if hop_length is None else hop_length
@@ -63,7 +61,7 @@ def a_weighted(audio, sample_rate, hop_length=None, pad=True):
     weighted[weighted < MIN_DB] = MIN_DB
 
     # Average over weighted frequencies
-    return paddle.from_numpy(weighted.mean(axis=0)).float().to(device)[None]
+    return paddle.from_numpy(weighted.mean(axis=0)).cast(paddle.float32)[None]
 
 
 def perceptual_weights():

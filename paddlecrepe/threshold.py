@@ -40,8 +40,6 @@ class Hysteresis:
         self.return_threshold = return_threshold
 
     def __call__(self, pitch, periodicity):
-        # Save output device
-        device = pitch.device
 
         # Perform hysteresis in log-2 space
         pitch = paddle.log2(pitch).detach().flatten().cpu().numpy()
@@ -95,11 +93,11 @@ class Hysteresis:
         pitch = pitch * std + mean
 
         # Convert to Hz
-        pitch = paddle.tensor(2 ** pitch, device=device)[None, :]
+        pitch = paddle.to_tensor(2 ** pitch)[None, :]
 
         # Optionally return threshold
         if self.return_threshold:
-            return pitch, paddle.tensor(threshold, device=device)
+            return pitch, paddle.to_tensor(threshold)
 
         return pitch
 

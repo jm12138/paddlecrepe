@@ -60,11 +60,11 @@ def nanfilter(signals, win_length, filter_fn):
     filtered = paddle.empty_like(signals)
 
     # Loop over frames
-    for i in range(signals.size(1)):
+    for i in range(signals.shape[1]):
 
         # Get analysis window bounds
         start = max(0, i - win_length // 2)
-        end = min(signals.size(1), i + win_length // 2 + 1)
+        end = min(signals.shape[1], i + win_length // 2 + 1)
 
         # Apply filter to window
         filtered[:, i] = filter_fn(signals[:, start:end])
@@ -111,7 +111,7 @@ def nanmedian(signals):
     medians = [nanmedian1d(signal[~nan]) for signal, nan in zip(signals, nans)]
 
     # Stack results
-    return paddle.tensor(medians, dtype=signals.dtype, device=signals.device)
+    return paddle.to_tensor(medians, dtype=signals.dtype)
 
 
 def nanmedian1d(signal):

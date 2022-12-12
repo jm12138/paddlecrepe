@@ -24,12 +24,12 @@ def weighted_argmax(logits):
     bins = logits.argmax(dim=1)
 
     # Find bounds of analysis window
-    start = paddle.max(paddle.tensor(0, device=logits.device), bins - 4)
-    end = paddle.min(paddle.tensor(logits.size(1), device=logits.device), bins + 5)
+    start = paddle.max(paddle.to_tensor(0), bins - 4)
+    end = paddle.min(paddle.to_tensor(logits.shape[1]), bins + 5)
 
     # Mask out everything outside of window
-    for batch in range(logits.size(0)):
-        for time in range(logits.size(2)):
+    for batch in range(logits.shape[0]):
+        for time in range(logits.shape[2]):
             logits[batch, :start[batch, time], time] = -float('inf')
             logits[batch, end[batch, time]:, time] = -float('inf')
 
@@ -38,8 +38,7 @@ def weighted_argmax(logits):
         weights = paddlecrepe.convert.bins_to_cents(paddle.arange(360))
         weighted_argmax.weights = weights[None, :, None]
 
-    # Ensure devices are the same (no-op if they are)
-    weighted_argmax.weights = weighted_argmax.weights.to(logits.device)
+    weighted_argmax.weights = weighted_argmax.weights
 
     # Convert to probabilities
     with paddle.no_grad():
@@ -74,7 +73,7 @@ def viterbi(logits):
         for sequence in sequences])
 
     # Convert to pypaddle
-    bins = paddle.tensor(bins, device=probs.device)
+    bins = paddle.to_tensor(bins)
 
     # Convert to frequency in Hz
     return bins, paddlecrepe.convert.bins_to_frequency(bins)

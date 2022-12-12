@@ -11,7 +11,7 @@ import paddlecrepe
 ###########################################################################
 
 
-class Crepe(paddle.nn.Module):
+class Crepe(paddle.nn.Layer):
     """Crepe model definition"""
 
     def __init__(self, model='full'):
@@ -34,12 +34,12 @@ class Crepe(paddle.nn.Module):
         strides = [(4, 1)] + 5 * [(1, 1)]
 
         # Overload with eps and momentum conversion given by MMdnn
-        batch_norm_fn = functools.partial(paddle.nn.BatchNorm2d,
-                                          eps=0.0010000000474974513,
-                                          momentum=0.0)
+        batch_norm_fn = functools.partial(paddle.nn.BatchNorm2D,
+                                          epsilon=0.0010000000474974513,
+                                          momentum=1.0)
 
         # Layer definitions
-        self.conv1 = paddle.nn.Conv2d(
+        self.conv1 = paddle.nn.Conv2D(
             in_channels=in_channels[0],
             out_channels=out_channels[0],
             kernel_size=kernel_sizes[0],
@@ -47,7 +47,7 @@ class Crepe(paddle.nn.Module):
         self.conv1_BN = batch_norm_fn(
             num_features=out_channels[0])
 
-        self.conv2 = paddle.nn.Conv2d(
+        self.conv2 = paddle.nn.Conv2D(
             in_channels=in_channels[1],
             out_channels=out_channels[1],
             kernel_size=kernel_sizes[1],
@@ -55,7 +55,7 @@ class Crepe(paddle.nn.Module):
         self.conv2_BN = batch_norm_fn(
             num_features=out_channels[1])
 
-        self.conv3 = paddle.nn.Conv2d(
+        self.conv3 = paddle.nn.Conv2D(
             in_channels=in_channels[2],
             out_channels=out_channels[2],
             kernel_size=kernel_sizes[2],
@@ -63,7 +63,7 @@ class Crepe(paddle.nn.Module):
         self.conv3_BN = batch_norm_fn(
             num_features=out_channels[2])
 
-        self.conv4 = paddle.nn.Conv2d(
+        self.conv4 = paddle.nn.Conv2D(
             in_channels=in_channels[3],
             out_channels=out_channels[3],
             kernel_size=kernel_sizes[3],
@@ -71,7 +71,7 @@ class Crepe(paddle.nn.Module):
         self.conv4_BN = batch_norm_fn(
             num_features=out_channels[3])
 
-        self.conv5 = paddle.nn.Conv2d(
+        self.conv5 = paddle.nn.Conv2D(
             in_channels=in_channels[4],
             out_channels=out_channels[4],
             kernel_size=kernel_sizes[4],
@@ -79,7 +79,7 @@ class Crepe(paddle.nn.Module):
         self.conv5_BN = batch_norm_fn(
             num_features=out_channels[4])
 
-        self.conv6 = paddle.nn.Conv2d(
+        self.conv6 = paddle.nn.Conv2D(
             in_channels=in_channels[5],
             out_channels=out_channels[5],
             kernel_size=kernel_sizes[5],
@@ -102,10 +102,10 @@ class Crepe(paddle.nn.Module):
         x = self.layer(x, self.conv6, self.conv6_BN)
 
         # shape=(batch, self.in_features)
-        x = x.permute(0, 2, 1, 3).reshape(-1, self.in_features)
+        x = x.transpose((0, 2, 1, 3)).reshape((-1, self.in_features))
 
         # Compute logits
-        return paddle.sigmoid(self.classifier(x))
+        return paddle.nn.functional.sigmoid(self.classifier(x))
 
     ###########################################################################
     # Forward pass utilities
